@@ -41,6 +41,8 @@ end
 
 function love.draw()
 	fadestate.draw()
+	love.graphics.setCanvas(nil)
+	love.graphics.draw(masterCanvas)
 end
 ```
 
