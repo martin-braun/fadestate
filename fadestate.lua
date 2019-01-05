@@ -106,7 +106,7 @@ end
 
 local function leaveState(state)
 	state.__canvas = nil
-	(state.leave or __NULL__)(state)
+	;(state.leave or __NULL__)(state)
 end
 
 --- Initialize the state manager.
