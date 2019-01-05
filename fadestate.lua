@@ -111,10 +111,10 @@ end
 
 --- Initialize the state manager.
 -- Initializes the state manager, adds the first state into the stack, calls firstState:init() and firstState:enter(currentState) and fades the state in.
--- @param canvas The master canvas on which all states will be drawn on.
+-- @param canvas The master canvas on which all active states will be drawn on.
 -- @param firstState New state to put on top of the stack.
 -- @param fadeType Type of the fading ("instant" - no fading; "out-in" - fade in new state after fading out current state). ••• WARNING: "cross" cannot be used on initialization!
--- @param fadeDurIn (optional) Duration to fade into the first state, default: fadeDurOut or 0.5.
+-- @param fadeDurIn (optional) Duration to fade into the first state, default: 0.5.
 -- @usage fadestate.init(myCanvas, myFirstState, "out-in", 0.5)
 function FS.init(canvas, firstState, fadeType, fadeDurIn, ...)
 	if fadeType == FADE_TYPE_CROSS then
@@ -144,52 +144,54 @@ function FS.update(dt)
 	if isTransitioning then
 		local stateChangeType, fadeType, fadeDurOut, fadeDurIn, fromState, toState = activeTransition.stateChangeType, activeTransition.fadeType, activeTransition.fadeDurOut, activeTransition.fadeDurIn, activeTransition.fromState, activeTransition.toState
 
-		if not fromState and not toState then -- initialize transition
+		if not fromState and not toState then -- transition not initialized yet?
 			activeTransition.fromState = stack[#stack]
 			fromState = activeTransition.fromState
 			fromState.__canvas = canvas2nd
 			canvasTopOpacity, canvas2ndOpacity = 0, COLOR_TOP
 		end
 
-		if fadeType == FADE_TYPE_INSTANT or (fadeDurOut <= 0 and fadeDurIn <= 0) then
+		if fadeType == FADE_TYPE_INSTANT or (fadeDurOut <= 0 and fadeDurIn <= 0) then -- instant mode?
 			canvas2ndOpacity = 0
 			canvasTopOpacity = COLOR_TOP
-		else
-			if canvas2ndOpacity > 0 then
-				canvas2ndOpacity = canvas2ndOpacity - COLOR_TOP / fadeDurOut * dt
+		else -- fade mode?
+			if canvas2ndOpacity > 0 then -- canvas of old state still visible?
+				canvas2ndOpacity = canvas2ndOpacity - COLOR_TOP / fadeDurOut * dt -- fade old state canvas out a little
 			end
-			if activeTransition.entered and (canvas2ndOpacity <= 0 or (canvasTopOpacity <= COLOR_TOP and fadeType == FADE_TYPE_CROSS)) then
-				canvasTopOpacity = canvasTopOpacity + COLOR_TOP / fadeDurIn * dt
+			if activeTransition.entered and (canvas2ndOpacity <= 0 or (canvasTopOpacity <= COLOR_TOP and fadeType == FADE_TYPE_CROSS)) then -- new state entered and last state's canvas out-faded or cross mode?
+				canvasTopOpacity = canvasTopOpacity + COLOR_TOP / fadeDurIn * dt -- fade new state canvas in a little
 			end
 		end
 
-		if fromState and canvas2ndOpacity <= 0 then
+		if fromState and canvas2ndOpacity <= 0 then -- canvas of old state fully invisible, eventually?
 			if activeTransition.stateChangeType ~= STATE_CHANGE_TYPE_PUSH then
-				leaveState(fromState)
+				leaveState(fromState) -- leave it
 			end
 			activeTransition.fromState = nil
 			fromState = nil
 		end
 
-		if not toState and (fadeType == FADE_TYPE_CROSS or canvas2ndOpacity <= 0) then
+		if not toState and (fadeType == FADE_TYPE_CROSS or canvas2ndOpacity <= 0) then -- new state ready to be entered, because cross mode or canvas of old state fully invisible?
 			activeTransition.toState = activeTransition.nextState
 			toState = activeTransition.toState
 			if activeTransition.stateChangeType ~= STATE_CHANGE_TYPE_POP then
-				enterState(toState, fromState)
+				enterState(toState, fromState) -- enter it
 			else
-				(toState.resume or __NULL__)(toState)
+				(toState.resume or __NULL__)(toState) -- resume it, if its popping
 			end
 			canvasTopOpacity = 0
+			-- change stack:
 			if stateChangeType == STATE_CHANGE_TYPE_SWITCH or stateChangeType == STATE_CHANGE_TYPE_POP then
 				stack[#stack] = nil
 			end
 			if stateChangeType ~= STATE_CHANGE_TYPE_POP then
 				stack[#stack + 1] = toState
 			end
-		elseif toState then
-			activeTransition.entered = true
+		elseif toState and not activeTransition.entered then -- 1st update after the new state has been initialized?
+			activeTransition.entered = true -- mark it entered on this next frame, to prevent blinking when switching canvases over
 		end
 
+		-- pass love.update callback:
 		if fromState then
 			fromState.__canvas = canvas2nd
 			;(fromState.update or __NULL__)(fromState, dt)
@@ -199,7 +201,7 @@ function FS.update(dt)
 			;(toState.update or __NULL__)(toState, dt)
 		end
 
-		if canvasTopOpacity >= COLOR_TOP then
+		if canvasTopOpacity >= COLOR_TOP then -- transition complete?
 			activeTransition.stateChangeType = nil
 			activeTransition.nextState = nil
 			activeTransition.fadeType = nil
@@ -209,11 +211,11 @@ function FS.update(dt)
 			activeTransition.fromState = nil
 			activeTransition.toState = nil
 			activeTransition.entered = nil
-			isTransitioning = false
+			isTransitioning = false -- end it
 		end
-	else
+	else -- no transition happening?
 		local state = stack[#stack]
-		;(state.update or __NULL__)(state, dt)
+		;(state.update or __NULL__)(state, dt) -- pass love.update callback
 	end
 end
 
@@ -226,6 +228,8 @@ end
 function FS.draw(w, h, lag)
 	if isTransitioning then
 		local fadeColor, fromState, toState = activeTransition.fadeColor, activeTransition.fromState, activeTransition.toState
+
+		-- pass love.draw callback:
 		if fromState then
 			setCanvas(fromState.__canvas)
 			clear(fadeColor)
@@ -236,11 +240,12 @@ function FS.draw(w, h, lag)
 			clear(fadeColor)
 			;(toState.draw or __NULL__)(toState, w, h, lag)
 		end
-	else
+
+	else -- no transition happening?
 		local state = stack[#stack]
 		setCanvas(state.__canvas)
 		clear()
-		;(state.draw or __NULL__)(state, w, h, lag)
+		;(state.draw or __NULL__)(state, w, h, lag) -- pass love.draw callback
 	end
 	setCanvas(masterCanvas)
 	clear()
