@@ -60,3 +60,4 @@ fadestate.pop("out-in", 0.5, 0.5) -- pops the current state from top of the stac
 
 - Tested for 0.10.2, but should work with 11.x. Simple change the constant `COLOR_TOP` to 1 in the fadestate.lua file.
 - Color mode not supported yet (fading into white, etc.)
+- Does not pass any other love-events to the states, besides love.update and love.draw. This is designed for games that make use of ECS structures, so you should have systems register any actions like keystrokes or events.
