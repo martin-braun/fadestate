@@ -80,7 +80,7 @@ local function initChangeState(stateChangeType, nextState, fadeType, fadeDurOut,
 	fadeType = fadeType or FADE_TYPE_INSTANT
 	fadeDurOut = fadeDurOut or defaultDur
 	fadeDurIn = fadeDurIn or fadeDurOut
-	fadeColor = fadeColor or { COLOR_TOP, COLOR_TOP, COLOR_TOP }
+	fadeColor = fadeColor or { 0, 0, 0 }
 
 	activeTransition.stateChangeType = stateChangeType
 	activeTransition.nextState = nextState
@@ -226,8 +226,10 @@ end
 -- @param lag (optional) Lag time that is passed to the draw functions of active and transitioning states. Only makes sense when making use of linear interpolation on a fixed timestamp.
 -- @usage fadestate.draw()
 function FS.draw(w, h, lag)
+	local fadeColor
 	if isTransitioning then
-		local fadeColor, fromState, toState = activeTransition.fadeColor, activeTransition.fromState, activeTransition.toState
+		local fromState, toState = activeTransition.fromState, activeTransition.toState
+		fadeColor = activeTransition.fadeColor
 
 		-- pass love.draw callback:
 		if fromState then
@@ -248,7 +250,7 @@ function FS.draw(w, h, lag)
 		;(state.draw or __NULL__)(state, w, h, lag) -- pass love.draw callback
 	end
 	setCanvas(masterCanvas)
-	clear()
+	clear(fadeColor)
 	if isTransitioning then
 		setColor(COLOR_TOP, COLOR_TOP, COLOR_TOP, canvas2ndOpacity)
 		draw(canvas2nd)
@@ -263,8 +265,9 @@ end
 -- @param fadeType Type of the fading ("instant" - no fading; "out-in" - fade in new state after fading out current state; "cross" - cross-fade both states, simultaneously). ••• WARNING: "cross" cannot be used when transitioning from the current itself (re-entering the same state)!
 -- @param fadeDurOut (optional) Duration to fade out current state, default: 0.5.
 -- @param fadeDurIn (optional) Duration to fade into new state, default: fadeDurOut or 0.5.
+-- @param fadeColor (optional) Background color while fading, default: { 0, 0, 0 }.
 -- @return False, if the transition could not be started, because a transition is still happening.
--- @usage fadestate.switch(myNewState, "out-in", 0.5, 0.5)
+-- @usage fadestate.switch(myNewState, "out-in", 0.5, 0.5, { 0, 0, 0 })
 function FS.switch(nextState, fadeType, fadeDurOut, fadeDurIn, fadeColor) -- TODO: fix fadeColor, not working yet
 	return initChangeState(STATE_CHANGE_TYPE_SWITCH, nextState, fadeType, fadeDurOut, fadeDurIn, fadeColor)
 end
@@ -275,8 +278,9 @@ end
 -- @param fadeType Type of the fading ("instant" - no fading; "out-in" - fade in new state after fading out current state; "cross" - cross-fade both states, simultaneously). ••• WARNING: "cross" cannot be used when transitioning from the current itself (re-entering the same state)!
 -- @param fadeDurOut (optional) Duration to fade out current state, default: 0.5.
 -- @param fadeDurIn (optional) Duration to fade into new state, default: fadeDurOut or 0.5.
+-- @param fadeColor (optional) Background color while fading, default: { 0, 0, 0 }.
 -- @return False, if the transition could not be started, because a transition is still happening.
--- @usage fadestate.push(myNextState, "out-in", 0.5, 0.5)
+-- @usage fadestate.push(myNextState, "out-in", 0.5, 0.5, { 0, 0, 0 })
 function FS.push(nextState, fadeType, fadeDurOut, fadeDurIn, fadeColor) -- TODO: fix fadeColor, not working yet
 	return initChangeState(STATE_CHANGE_TYPE_PUSH, nextState, fadeType, fadeDurOut, fadeDurIn, fadeColor)
 end
@@ -286,8 +290,9 @@ end
 -- @param fadeType Type of the fading ("instant" - no fading; "out-in" - fade in new state after fading out current state; "cross" - cross-fade both states, simultaneously). ••• WARNING: "cross" cannot be used when transitioning from the current itself (re-entering the same state)!
 -- @param fadeDurOut (optional) Duration to fade out current state, default: 0.5.
 -- @param fadeDurIn (optional) Duration to fade into new state, default: fadeDurOut or 0.5.
+-- @param fadeColor (optional) Background color while fading, default: { 0, 0, 0 }.
 -- @return False, if the transition could not be started, because a transition is still happening.
--- @usage fadestate.pop("out-in", 0.5, 0.5)
+-- @usage fadestate.pop("out-in", 0.5, 0.5, { 0, 0, 0 })
 function FS.pop(fadeType, fadeDurOut, fadeDurIn, fadeColor) -- TODO: fix fadeColor, not working yet
 	return initChangeState(STATE_CHANGE_TYPE_POP, stack[#stack - 1], fadeType, fadeDurOut, fadeDurIn, fadeColor)
 end

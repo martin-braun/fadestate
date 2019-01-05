@@ -50,16 +50,15 @@ end
 
 ```lua
 
-fadestate.switch(myNewState, "out-in", 0.5, 0.5) -- replaces current state on top of the stack, calls oldState:leave, newState:init (once) and newState:enter
+fadestate.switch(myNewState, "out-in", 0.5, 0.5, { 0, 0, 0 }) -- replaces current state on top of the stack, calls oldState:leave, newState:init (once) and newState:enter
 
-fadestate.push(myNextState, "out-in", 0.5, 0.5) -- adds new state on top of the stack, calls newState:init (once) and newState:enter
+fadestate.push(myNextState, "out-in", 0.5, 0.5, { 0, 0, 0 }) -- adds new state on top of the stack, calls newState:init (once) and newState:enter
 
-fadestate.pop("out-in", 0.5, 0.5) -- pops the current state from top of the stack, calls oldState:leave and lastState:resume
+fadestate.pop("out-in", 0.5, 0.5, { 0, 0, 0 }) -- pops the current state from top of the stack, calls oldState:leave and lastState:resume
 
 ```
 
 ## Support
 
 - Tested for 0.10.2, but should work with 11.x. Simple change the constant `COLOR_TOP` to 1 in the fadestate.lua file.
-- Color mode not supported yet (fading into white, etc.)
 - Does not pass any other love callbacks to the states, besides love.update and love.draw. This is designed for games that make use of ECS structures, so you should have systems register any actions like keystrokes or events.
